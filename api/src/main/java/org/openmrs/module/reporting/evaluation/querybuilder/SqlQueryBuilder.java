@@ -68,7 +68,7 @@ public class SqlQueryBuilder implements QueryBuilder {
 			if (dotIndex != -1) {
 				s = s.substring(dotIndex+1);
 			}
-			String[] split = s.split("\\s");
+			String[] split = s.split("\\s", 3);
 			if (split.length == 1) {
 				s = split[0];
 			}

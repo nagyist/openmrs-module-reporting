@@ -1,5 +1,6 @@
 package org.openmrs.module.reporting.dataset.definition.evaluator;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -8,6 +9,8 @@ import org.openmrs.api.context.Context;
 import org.openmrs.module.reporting.dataset.definition.SqlDataSetDefinition;
 import org.openmrs.module.reporting.dataset.definition.service.DataSetDefinitionService;
 import org.openmrs.module.reporting.evaluation.EvaluationContext;
+import org.openmrs.module.reporting.evaluation.querybuilder.SqlQueryBuilder;
+import org.openmrs.module.reporting.evaluation.service.EvaluationService;
 import org.openmrs.test.BaseModuleContextSensitiveTest;
 
 import java.util.ArrayList;
@@ -33,7 +36,7 @@ public class MySqlDataSetEvaluatorTest extends BaseModuleContextSensitiveTest {
 	@Override
 	public Properties getRuntimeProperties() {
 		Properties p = super.getRuntimeProperties();
-		p.setProperty("connection.url", "jdbc:mysql://localhost:3306/openmrs?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8");
+		p.setProperty("connection.url", "jdbc:mysql://localhost:3306/openmrs_mirebalais?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8");
 		return p;
 	}
 
@@ -51,5 +54,13 @@ public class MySqlDataSetEvaluatorTest extends BaseModuleContextSensitiveTest {
 		context.addParameterValue("locations", locationList);
 
 		Context.getService(DataSetDefinitionService.class).evaluate(dataSetDefinition, context);
+	}
+
+	@Test
+	public void evaluate_shouldAllowAliasesWithSpaces() throws Exception {
+		SqlQueryBuilder q = new SqlQueryBuilder();
+		q.append("select person_id, birthdate as 'Date of Birth' from person");
+		Context.getService(EvaluationService.class).evaluateToList(q, new EvaluationContext());
+		Assert.assertEquals("Date of Birth", q.getColumns().get(1).getName());
 	}
 }
