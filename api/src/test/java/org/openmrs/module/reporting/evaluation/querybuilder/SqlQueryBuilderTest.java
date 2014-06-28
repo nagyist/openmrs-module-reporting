@@ -123,6 +123,17 @@ public class SqlQueryBuilderTest extends BaseModuleContextSensitiveTest {
 		Assert.assertEquals(3, result.size());
 	}
 
+	@Test
+	public void buildQuery_shouldHandleComments() throws Exception {
+		SqlQueryBuilder q = new SqlQueryBuilder();
+		q.append("-- This query selects genders for the given cohort\n");
+		q.append("select p.gender from person p where p.person_id in (:cohort)");
+		Cohort baseCohort = new Cohort("2,6,7");
+		q.addParameter("cohort", baseCohort);
+		List<Object[]> result = evaluationService.evaluateToList(q, new EvaluationContext());
+		Assert.assertEquals(3, result.size());
+	}
+
 	@Override
 	public Properties getRuntimeProperties() {
 		Properties p = super.getRuntimeProperties();

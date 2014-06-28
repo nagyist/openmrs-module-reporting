@@ -1,5 +1,6 @@
 package org.openmrs.module.reporting.evaluation.querybuilder;
 
+import liquibase.util.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.hibernate.Query;
@@ -99,6 +100,7 @@ public class SqlQueryBuilder implements QueryBuilder {
 		List<DataSetColumn> l = new ArrayList<DataSetColumn>();
 
 		String queryString = getSqlQuery();
+		queryString = StringUtils.stripComments(queryString);
 
 		// Convert the query and the order of the parameters for use with a Prepared Statement
 		Map<Integer, String> parameterIndexes = new TreeMap<Integer, String>();
@@ -160,6 +162,7 @@ public class SqlQueryBuilder implements QueryBuilder {
 	@Override
 	public Query buildQuery(SessionFactory sessionFactory) {
 		String q = getSqlQuery();
+		q = StringUtils.stripComments(q);
 		Query query = sessionFactory.getCurrentSession().createSQLQuery(q);
 		for (Map.Entry<String, Object> e : getParameters().entrySet()) {
 			Object value = normalizeParameterValue(e.getValue());
