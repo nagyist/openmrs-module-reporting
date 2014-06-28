@@ -6,6 +6,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.openmrs.Location;
 import org.openmrs.api.context.Context;
+import org.openmrs.module.reporting.dataset.DataSetColumn;
 import org.openmrs.module.reporting.dataset.definition.SqlDataSetDefinition;
 import org.openmrs.module.reporting.dataset.definition.service.DataSetDefinitionService;
 import org.openmrs.module.reporting.evaluation.EvaluationContext;
@@ -61,6 +62,7 @@ public class MySqlDataSetEvaluatorTest extends BaseModuleContextSensitiveTest {
 		SqlQueryBuilder q = new SqlQueryBuilder();
 		q.append("select person_id, birthdate as 'Date of Birth' from person");
 		Context.getService(EvaluationService.class).evaluateToList(q, new EvaluationContext());
-		Assert.assertEquals("Date of Birth", q.getColumns().get(1).getName());
+		List<DataSetColumn> columns = Context.getService(EvaluationService.class).getColumns(q);
+		Assert.assertEquals("Date of Birth", columns.get(1).getName());
 	}
 }

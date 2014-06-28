@@ -24,7 +24,7 @@ public interface QueryBuilder {
 	/**
 	 * @return the columns that this query will return
 	 */
-	public List<DataSetColumn> getColumns();
+	public List<DataSetColumn> getColumns(SessionFactory sessionFactory);
 
 	/**
 	 * @return the hibernate query for the configured instance

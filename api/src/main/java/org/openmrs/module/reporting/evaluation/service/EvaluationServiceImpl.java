@@ -17,6 +17,7 @@ import org.hibernate.Query;
 import org.hibernate.SessionFactory;
 import org.openmrs.api.context.Context;
 import org.openmrs.api.impl.BaseOpenmrsService;
+import org.openmrs.module.reporting.dataset.DataSetColumn;
 import org.openmrs.module.reporting.evaluation.EvaluationContext;
 import org.openmrs.module.reporting.evaluation.EvaluationProfiler;
 import org.openmrs.module.reporting.evaluation.querybuilder.QueryBuilder;
@@ -32,6 +33,15 @@ import java.util.Map;
  * Implementation of the EvaluationService interface
  */
 public class EvaluationServiceImpl extends BaseOpenmrsService implements EvaluationService {
+
+	/**
+	 * @see EvaluationService#getColumns(QueryBuilder)
+	 */
+	@Override
+	@Transactional(readOnly = true)
+	public List<DataSetColumn> getColumns(QueryBuilder queryBuilder) {
+		return queryBuilder.getColumns(getSessionFactory());
+	}
 
     /**
 	 * @see EvaluationService#evaluateToList(QueryBuilder, EvaluationContext)

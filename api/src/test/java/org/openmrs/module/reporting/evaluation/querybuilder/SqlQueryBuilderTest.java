@@ -53,10 +53,10 @@ public class SqlQueryBuilderTest extends BaseModuleContextSensitiveTest {
 	public void getColumns_shouldReturnTheConfiguredColumns() throws Exception {
 		SqlQueryBuilder q = new SqlQueryBuilder();
 		q.append("select p.person_id id, p.gender, p.birthdate as bd from person p where voided = 0");
-		List<DataSetColumn> columns = q.getColumns();
-		Assert.assertEquals("id", columns.get(0).getName());
-		Assert.assertEquals("gender", columns.get(1).getName());
-		Assert.assertEquals("bd", columns.get(2).getName());
+		List<DataSetColumn> columns = evaluationService.getColumns(q);
+		Assert.assertEquals("id", columns.get(0).getName().toLowerCase());
+		Assert.assertEquals("gender", columns.get(1).getName().toLowerCase());
+		Assert.assertEquals("bd", columns.get(2).getName().toLowerCase());
 	}
 
 	@Test

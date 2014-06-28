@@ -4,6 +4,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.hibernate.Query;
 import org.hibernate.SessionFactory;
+import org.hibernate.type.Type;
 import org.openmrs.Cohort;
 import org.openmrs.Voidable;
 import org.openmrs.module.reporting.common.DateUtil;
@@ -399,16 +400,17 @@ public class HqlQueryBuilder implements QueryBuilder {
 	}
 
 	@Override
-	public List<DataSetColumn> getColumns() {
+	public List<DataSetColumn> getColumns(SessionFactory sessionFactory) {
 		List<DataSetColumn> l = new ArrayList<DataSetColumn>();
-		for (String s : columns) {
-			String[] split = s.split("\\:");
-			if (split.length > 1) {
-				l.add(new DataSetColumn(split[1], split[1], Object.class));
-			}
-			else {
-				l.add(new DataSetColumn(split[0], split[0], Object.class));
-			}
+		Query q = buildQuery(sessionFactory);
+		String[] returnAliases = q.getReturnAliases();
+		Type[] returnTypes = q.getReturnTypes();
+		for (int i=0; i<returnAliases.length; i++) {
+			DataSetColumn column = new DataSetColumn();
+			column.setName(returnAliases[i]);
+			column.setLabel(returnAliases[i]);
+			column.setDataType(returnTypes[i].getReturnedClass());
+			l.add(column);
 		}
 		return l;
 	}

@@ -80,7 +80,7 @@ public class SqlDataSetEvaluator implements DataSetEvaluator {
 		queryBuilder.setParameters(context.getParameterValues());
 
 		List<Object[]> results = evaluationService.evaluateToList(queryBuilder, context);
-		List<DataSetColumn> columns = queryBuilder.getColumns();
+		List<DataSetColumn> columns = evaluationService.getColumns(queryBuilder);
 
 		if (context.getBaseCohort() != null && !context.getBaseCohort().isEmpty()) {
 			int patientIdColumn = -1;
