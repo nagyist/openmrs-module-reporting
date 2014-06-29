@@ -46,6 +46,7 @@ public class SqlQueryBuilder implements QueryBuilder {
 
 	public SqlQueryBuilder addParameter(String parameterName, Object parameterValue) {
 		boolean addParameter = true;
+		String toMatch = ":" + parameterName;
 		if (parameterValue != null) {
 			Set<Integer> memberIds = null;
 			if (parameterValue instanceof Cohort) {
@@ -55,7 +56,6 @@ public class SqlQueryBuilder implements QueryBuilder {
 				memberIds = ((IdSet) parameterValue).getMemberIds();
 			}
 			if (memberIds != null) {
-				String toMatch = ":" + parameterName;
 				for (int i=0; i<queryClauses.size(); i++) {
 					String clause = queryClauses.get(i);
 					if (clause.contains(toMatch)) {
@@ -66,6 +66,14 @@ public class SqlQueryBuilder implements QueryBuilder {
 						addParameter = false;
 					}
 				}
+			}
+		}
+		else {
+			for (int i=0; i<queryClauses.size(); i++) {
+				String clause = queryClauses.get(i);
+				clause = clause.replace(toMatch, "null");
+				queryClauses.set(i ,clause);
+				addParameter = false;
 			}
 		}
 		if (addParameter) {

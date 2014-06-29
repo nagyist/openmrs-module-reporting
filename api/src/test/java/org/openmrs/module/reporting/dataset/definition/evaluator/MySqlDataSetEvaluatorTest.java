@@ -65,4 +65,23 @@ public class MySqlDataSetEvaluatorTest extends BaseModuleContextSensitiveTest {
 		List<DataSetColumn> columns = Context.getService(EvaluationService.class).getColumns(q);
 		Assert.assertEquals("Date of Birth", columns.get(1).getName());
 	}
+
+	@Test
+	public void evaluate_shouldHandleNulls() throws Exception {
+		SqlDataSetDefinition dsd = new SqlDataSetDefinition();
+		EvaluationContext context = new EvaluationContext();
+		context.addParameterValue("location", null);
+
+		// Test 1
+		dsd.setSqlQuery("SELECT IFNULL(:location,0)");
+		Context.getService(DataSetDefinitionService.class).evaluate(dsd, context);
+
+		// Test 2
+		dsd.setSqlQuery("SELECT COALESCE(:location,1)");
+		Context.getService(DataSetDefinitionService.class).evaluate(dsd, context);
+
+		// Test 3
+		dsd.setSqlQuery("SELECT * FROM location WHERE :location IS NULL");
+		Context.getService(DataSetDefinitionService.class).evaluate(dsd, context);
+	}
 }
