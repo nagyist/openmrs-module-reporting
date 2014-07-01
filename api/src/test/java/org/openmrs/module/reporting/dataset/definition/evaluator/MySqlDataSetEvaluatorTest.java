@@ -6,13 +6,16 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.openmrs.Location;
 import org.openmrs.api.context.Context;
+import org.openmrs.module.reporting.dataset.DataSet;
 import org.openmrs.module.reporting.dataset.DataSetColumn;
+import org.openmrs.module.reporting.dataset.DataSetUtil;
 import org.openmrs.module.reporting.dataset.definition.SqlDataSetDefinition;
 import org.openmrs.module.reporting.dataset.definition.service.DataSetDefinitionService;
 import org.openmrs.module.reporting.evaluation.EvaluationContext;
 import org.openmrs.module.reporting.evaluation.querybuilder.SqlQueryBuilder;
 import org.openmrs.module.reporting.evaluation.service.EvaluationService;
 import org.openmrs.test.BaseModuleContextSensitiveTest;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,6 +23,9 @@ import java.util.Properties;
 
 @Ignore
 public class MySqlDataSetEvaluatorTest extends BaseModuleContextSensitiveTest {
+
+	@Autowired
+	EvaluationService evaluationService;
 
 	@Override
 	public Boolean useInMemoryDatabase() {
@@ -83,5 +89,17 @@ public class MySqlDataSetEvaluatorTest extends BaseModuleContextSensitiveTest {
 		// Test 3
 		dsd.setSqlQuery("SELECT * FROM location WHERE :location IS NULL");
 		Context.getService(DataSetDefinitionService.class).evaluate(dsd, context);
+	}
+
+	@Test
+	public void evaluate_shouldAllowVariableInQuery() throws Exception {
+		SqlDataSetDefinition dsd = new SqlDataSetDefinition();
+		dsd.setSqlQuery("select @numThisYear:=(select count(encounter_datetime) from encounter where voided = 0 and year(encounter_datetime) = :year), (@numThisYear-1000) as numMinus1000");
+		for (int year=2012; year<=2014; year++) {
+			EvaluationContext context = new EvaluationContext();
+			context.addParameterValue("year", year);
+			DataSet dataSet = Context.getService(DataSetDefinitionService.class).evaluate(dsd, context);
+			DataSetUtil.printDataSet(dataSet, System.out);
+		}
 	}
 }

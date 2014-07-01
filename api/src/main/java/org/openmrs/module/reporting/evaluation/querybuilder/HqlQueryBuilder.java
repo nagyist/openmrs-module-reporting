@@ -11,6 +11,7 @@ import org.openmrs.module.reporting.common.DateUtil;
 import org.openmrs.module.reporting.common.ObjectUtil;
 import org.openmrs.module.reporting.dataset.DataSetColumn;
 import org.openmrs.module.reporting.evaluation.EvaluationContext;
+import org.openmrs.module.reporting.evaluation.EvaluationProfiler;
 import org.openmrs.module.reporting.evaluation.context.EncounterEvaluationContext;
 import org.openmrs.module.reporting.evaluation.context.ObsEvaluationContext;
 import org.openmrs.module.reporting.evaluation.context.PersonEvaluationContext;
@@ -416,6 +417,31 @@ public class HqlQueryBuilder implements QueryBuilder {
 	}
 
 	@Override
+	public List<Object[]> evaluateToList(SessionFactory sessionFactory, EvaluationContext context) {
+		// Due to hibernate bug HHH-2166, we need to make sure the HqlSqlWalker logger is not at DEBUG or TRACE level
+		OpenmrsUtil.applyLogLevel("org.hibernate.hql.ast.HqlSqlWalker", "WARN");
+		EvaluationProfiler profiler = new EvaluationProfiler(context);
+		profiler.logBefore("EXECUTING_QUERY", toString());
+		List<Object[]> ret = new ArrayList<Object[]>();
+		try {
+			Query q = buildQuery(sessionFactory);
+			for (Object resultRow : q.list()) {
+				if (resultRow instanceof Object[]) {
+					ret.add((Object[]) resultRow);
+				} else {
+					ret.add(new Object[]{resultRow});
+				}
+			}
+		}
+		catch (RuntimeException e) {
+			profiler.logError("EXECUTING_QUERY", toString(), e);
+			throw e;
+		}
+		profiler.logAfter("EXECUTING_QUERY", "Completed successfully with " + ret.size() + " results");
+		return ret;
+	}
+
+	@Override
 	public String toString() {
 		if (builtQueryString == null) {
 			return super.toString();
@@ -431,8 +457,10 @@ public class HqlQueryBuilder implements QueryBuilder {
 		return ret;
 	}
 
-	@Override
-	public Query buildQuery(SessionFactory sessionFactory) {
+
+	// Protected methods
+
+	protected Query buildQuery(SessionFactory sessionFactory) {
 
 		if ((positionIndex-1) > parameters.size()) {
 			throw new IllegalStateException("You have not specified enough parameters for the specified constraints");
@@ -510,8 +538,6 @@ public class HqlQueryBuilder implements QueryBuilder {
 
 		return query;
 	}
-
-	// Protected methods
 
 	protected HqlQueryBuilder withValue(Object parameterValue) {
 		parameters.put(lastPositionIndex(), parameterValue);

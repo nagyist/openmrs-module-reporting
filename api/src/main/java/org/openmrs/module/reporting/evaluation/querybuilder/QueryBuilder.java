@@ -16,6 +16,7 @@ package org.openmrs.module.reporting.evaluation.querybuilder;
 import org.hibernate.Query;
 import org.hibernate.SessionFactory;
 import org.openmrs.module.reporting.dataset.DataSetColumn;
+import org.openmrs.module.reporting.evaluation.EvaluationContext;
 
 import java.util.List;
 
@@ -29,5 +30,5 @@ public interface QueryBuilder {
 	/**
 	 * @return the hibernate query for the configured instance
 	 */
-	public Query buildQuery(SessionFactory sessionFactory);
+	public List<Object[]> evaluateToList(SessionFactory sessionFactory, EvaluationContext context);
 }
