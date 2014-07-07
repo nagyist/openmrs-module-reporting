@@ -22,9 +22,12 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -51,40 +54,7 @@ public class SqlQueryBuilder implements QueryBuilder {
 	}
 
 	public SqlQueryBuilder addParameter(String parameterName, Object parameterValue) {
-		boolean addParameter = true;
-		String toMatch = ":" + parameterName;
-		if (parameterValue != null) {
-			Set<Integer> memberIds = null;
-			if (parameterValue instanceof Cohort) {
-				memberIds = ((Cohort) parameterValue).getMemberIds();
-			}
-			if (parameterValue instanceof IdSet) {
-				memberIds = ((IdSet) parameterValue).getMemberIds();
-			}
-			if (memberIds != null) {
-				for (int i=0; i<queryClauses.size(); i++) {
-					String clause = queryClauses.get(i);
-					if (clause.contains(toMatch)) {
-						String idClause = "(" + OpenmrsUtil.join(memberIds, ",") + ")";
-						clause = clause.replace("(" + toMatch + ")", idClause); // where id in (:ids)
-						clause = clause.replace(toMatch, idClause); // where id in :ids
-						queryClauses.set(i, clause);
-						addParameter = false;
-					}
-				}
-			}
-		}
-		else {
-			for (int i=0; i<queryClauses.size(); i++) {
-				String clause = queryClauses.get(i);
-				clause = clause.replace(toMatch, "null");
-				queryClauses.set(i ,clause);
-				addParameter = false;
-			}
-		}
-		if (addParameter) {
-			getParameters().put(parameterName, normalizeParameterValue(parameterValue));
-		}
+		getParameters().put(parameterName, parameterValue);
 		return this;
 	}
 
@@ -96,12 +66,7 @@ public class SqlQueryBuilder implements QueryBuilder {
 	}
 
 	public void setParameters(Map<String, Object> parameters) {
-		this.parameters.clear();
-		if (parameters != null) {
-			for (String parameterName : parameters.keySet()) {
-				addParameter(parameterName, parameters.get(parameterName));
-			}
-		}
+		this.parameters = parameters;
 	}
 
 	public String getSqlQuery() {
@@ -187,11 +152,48 @@ public class SqlQueryBuilder implements QueryBuilder {
 	}
 
 	protected PreparedStatement createPreparedStatement(Connection connection) throws SQLException {
-		// Convert the query and the order of the parameters for use with a Prepared Statement
+
 		String queryString = getSqlQuery();
-		Map<Integer, String> parameterIndexes = new TreeMap<Integer, String>();
-		for (String parameterName : getParameters().keySet()) {
+		Map<String, Object> params = new LinkedHashMap<String, Object>();
+
+		// First we need to pre-process the parameters, to handle large id sets, nulls, and ensure similar parameter names are processed in the right order
+		for (String parameterName : getParameterNamesInOrderForReplacement()) {
 			Object parameterValue = getParameters().get(parameterName);
+			String toMatch = ":" + parameterName;
+
+			boolean addParameter = true;
+
+			if (parameterValue != null) {
+				Set<Integer> memberIds = null;
+				if (parameterValue instanceof Cohort) {
+					memberIds = ((Cohort) parameterValue).getMemberIds();
+				}
+				if (parameterValue instanceof IdSet) {
+					memberIds = ((IdSet) parameterValue).getMemberIds();
+				}
+				if (memberIds != null) {
+					if (queryString.contains(toMatch)) {
+						String idClause = "(" + OpenmrsUtil.join(memberIds, ",") + ")";
+						queryString = queryString.replace("(" + toMatch + ")", idClause); // where id in (:ids)
+						queryString = queryString.replace(toMatch, idClause); // where id in :ids
+						addParameter = false;
+					}
+				}
+			} else {
+				queryString = queryString.replace(toMatch, "null");
+				addParameter = false;
+			}
+
+			if (addParameter) {
+				params.put(parameterName, normalizeParameterValue(parameterValue));
+			}
+		}
+
+		// Now that we have the parameters we need to pass in as replacements, process these for use with a Prepared Statement
+
+		Map<Integer, String> parameterIndexes = new TreeMap<Integer, String>();
+		for (String parameterName : params.keySet()) {
+			Object parameterValue = params.get(parameterName);
 			StringBuilder replacementValue = new StringBuilder("?");
 			if (parameterValue instanceof Collection) {
 				Collection c = (Collection)parameterValue;
@@ -219,7 +221,7 @@ public class SqlQueryBuilder implements QueryBuilder {
 		PreparedStatement statement = connection.prepareStatement(queryString);
 		int nextIndex = 1;
 		for (String parameterName : parametersInOrder) {
-			Object parameterValue = getParameters().get(parameterName);
+			Object parameterValue = params.get(parameterName);
 			nextIndex = setPositionalQueryParameter(statement, nextIndex, parameterValue);
 		}
 
@@ -298,5 +300,25 @@ public class SqlQueryBuilder implements QueryBuilder {
 				return value;
 			}
 		}
+	}
+
+	protected List<String> getParameterNamesInOrderForReplacement() {
+		List<String> parametersToReplace = new ArrayList<String>(getParameters().keySet());
+		Collections.sort(parametersToReplace, new Comparator<String>() {
+			public int compare(String s1, String s2) {
+				int l1 = s1.length();
+				int l2 = s2.length();
+				if (l1 > l2) {
+					return -1;
+				}
+				else if (l1 < l2) {
+					return 1;
+				}
+				else {
+					return s1.compareTo(s2);
+				}
+			}
+		});
+		return parametersToReplace;
 	}
 }

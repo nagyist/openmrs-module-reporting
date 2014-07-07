@@ -134,6 +134,16 @@ public class SqlQueryBuilderTest extends BaseModuleContextSensitiveTest {
 		Assert.assertEquals(3, result.size());
 	}
 
+	@Test
+	public void buildQuery_shouldSupportParametersThatStartWithSameSequence() throws Exception {
+		SqlQueryBuilder q = new SqlQueryBuilder();
+		q.append("select patient_id from patient where patient_id = :patient24 and patient_id <> :patient2");
+		q.addParameter("patient2", 2);
+		q.addParameter("patient24", 24);
+		List<Object[]> result = evaluationService.evaluateToList(q, new EvaluationContext());
+		Assert.assertEquals(1, result.size());
+	}
+
 	@Override
 	public Properties getRuntimeProperties() {
 		Properties p = super.getRuntimeProperties();
