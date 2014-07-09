@@ -218,7 +218,11 @@ public class SqlQueryBuilder implements QueryBuilder {
 
 		List<String> parametersInOrder = new ArrayList<String>(parameterIndexes.values());
 
+		log.warn("***** Preparing SQL Query String *****");
+		log.warn(queryString);
+
 		PreparedStatement statement = connection.prepareStatement(queryString);
+
 		int nextIndex = 1;
 		for (String parameterName : parametersInOrder) {
 			Object parameterValue = params.get(parameterName);
@@ -263,6 +267,7 @@ public class SqlQueryBuilder implements QueryBuilder {
 			else {
 				statement.setString(position, value.toString());
 			}
+			log.warn(position + ": " + value + " (" + value.getClass().getSimpleName() + ")");
 			position++;
 		}
 		return position;
